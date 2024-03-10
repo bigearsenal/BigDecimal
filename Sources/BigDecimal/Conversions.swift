@@ -1,27 +1,27 @@
 import BigInt
 import Numerics
 
-extension BigDecimal {
+public extension BigDecimal {
     @inlinable
-    public init<T>(_ source: T) where T: BinaryInteger {
+    init<T>(_ source: T) where T: BinaryInteger {
         self.init(integerValue: BigInt(source), scale: 0)
     }
 
     @inlinable
-    public init?<T>(_ source: T) where T: BinaryFloatingPoint, T: CustomStringConvertible {
+    init?<T>(_ source: T) where T: BinaryFloatingPoint, T: CustomStringConvertible {
         self.init(source.description)
     }
 }
 
-extension BinaryInteger {
+public extension BinaryInteger {
     @inlinable
-    public init(_ source: BigDecimal) {
+    init(_ source: BigDecimal) {
         self.init(source.withScale(0).integerValue)
     }
 
     @inlinable
-    public init?(exactly source: BigDecimal) {
-        guard let doubleValue = Double.init(exactly: source) else {
+    init?(exactly source: BigDecimal) {
+        guard let doubleValue = Double(exactly: source) else {
             return nil
         }
 
@@ -29,9 +29,9 @@ extension BinaryInteger {
     }
 }
 
-extension Float {
+public extension Float {
     @inlinable
-    public init?(exactly source: BigDecimal) {
+    init?(exactly source: BigDecimal) {
         guard let value = Self(exactly: source.integerValue).map({ $0 * .pow(10, -source.scale) }) else {
             return nil
         }
@@ -40,9 +40,9 @@ extension Float {
     }
 }
 
-extension Double {
+public extension Double {
     @inlinable
-    public init?(exactly source: BigDecimal) {
+    init?(exactly source: BigDecimal) {
         guard let value = Self(exactly: source.integerValue).map({ $0 * .pow(10, -source.scale) }) else {
             return nil
         }
@@ -52,14 +52,14 @@ extension Double {
 }
 
 #if (arch(i386) || arch(x86_64)) && !os(Windows) && !os(Android)
-extension Float80 {
-    @inlinable
-    public init?(exactly source: BigDecimal) {
-        guard let value = Self(exactly: source.integerValue).map({ $0 * .pow(10, -source.scale) }) else {
-            return nil
-        }
+    public extension Float80 {
+        @inlinable
+        init?(exactly source: BigDecimal) {
+            guard let value = Self(exactly: source.integerValue).map({ $0 * .pow(10, -source.scale) }) else {
+                return nil
+            }
 
-        self = value
+            self = value
+        }
     }
-}
 #endif

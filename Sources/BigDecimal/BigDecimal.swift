@@ -1,12 +1,14 @@
 #if swift(>=5.6)
-@preconcurrency import BigInt
+    @preconcurrency import BigInt
 #elseif swift(>=5.5)
-import BigInt
+    import BigInt
 
-extension BigInt: @unchecked Sendable {}
+    extension BigInt: @unchecked Sendable {}
 #else
-import BigInt
+    import BigInt
 #endif
+
+import Numerics
 
 /// A big decimal type.
 public struct BigDecimal {
@@ -28,23 +30,23 @@ public struct BigDecimal {
         self.scale = scale
     }
 
-
     /// Returns a new ``BigDecimal`` value equivalent to self, with internal scaling set to the specified number.
     ///
-    /// - Parameter newScale: The scale the returned value will have. If it is lower than the current value (indicating a larger power of 10), digits will be dropped (as precision is lower).
+    /// - Parameter newScale: The scale the returned value will have. If it is lower than the current value (indicating
+    /// a larger power of 10), digits will be dropped (as precision is lower).
     /// - Returns: A new ``BigDecimal`` value with the specified scale.
     @inlinable
     public func withScale(_ newScale: Int) -> BigDecimal {
-        if self.integerValue.isZero {
+        if integerValue.isZero {
             return .init(integerValue: 0, scale: newScale)
         }
 
-        if newScale > self.scale {
-            let scaleDifference = newScale - self.scale
+        if newScale > scale {
+            let scaleDifference = newScale - scale
             let integerValue = self.integerValue * tenToThe(power: scaleDifference)
             return .init(integerValue: integerValue, scale: newScale)
-        } else if newScale < self.scale {
-            let scaleDifference = self.scale - newScale
+        } else if newScale < scale {
+            let scaleDifference = scale - newScale
             let integerValue = self.integerValue / tenToThe(power: scaleDifference)
             return .init(integerValue: integerValue, scale: newScale)
         } else {
@@ -58,70 +60,67 @@ public struct BigDecimal {
     /// - Returns; A new ``BigDecimal`` value with the specified precision.
     @inlinable
     public func withPrecision(_ precision: Int) -> BigDecimal {
-        let digits = self.integerValue.digitCount
+        let digits = integerValue.digitCount
 
         if digits > precision {
             let difference = digits - precision
             let p = tenToThe(power: difference)
             var q: BigInt
             let r: BigInt
-            (q, r) = self.integerValue.quotientAndRemainder(dividingBy: p)
+            (q, r) = integerValue.quotientAndRemainder(dividingBy: p)
 
             // check for "leading zero" in remainder term; otherwise round
             if p < 10 * r {
                 q += getRoundingTerm(of: r)
             }
 
-            return .init(integerValue: q, scale: self.scale - difference)
+            return .init(integerValue: q, scale: scale - difference)
         } else if digits < precision {
             let difference = precision - digits
-            return .init(integerValue: self.integerValue * tenToThe(power: difference), scale: self.scale + difference)
+            return .init(integerValue: integerValue * tenToThe(power: difference), scale: scale + difference)
         } else {
             return self
         }
     }
 
-
     /// The additive identity value.
     @inlinable
-    static public var zero: BigDecimal {
+    public static var zero: BigDecimal {
         .init(integerValue: .zero, scale: 0)
     }
 
     /// The multiplicative identity value.
     @inlinable
-    static public var one: BigDecimal {
+    public static var one: BigDecimal {
         .init(integerValue: 1, scale: 0)
     }
 
     /// Is `true` if this value is equal to `0`, i.e. if it is `+0` or `-0`.
     @inlinable
     public var isZero: Bool {
-        self.integerValue.isZero
+        integerValue.isZero
     }
-
 
     /// The sign of this value.
     @inlinable
     public var sign: BigInt.Sign {
-        self.integerValue.sign
+        integerValue.sign
     }
-
 
     /// The number of digits in the non-scaled integer representation.
     @inlinable
     public var digitCount: Int {
-        self.integerValue.digitCount
+        integerValue.digitCount
     }
 }
 
-extension BigDecimal {
-    public enum ParsingError: Error, CustomStringConvertible {
+public extension BigDecimal {
+    enum ParsingError: Error, CustomStringConvertible {
         case nonASCIIString
         case empty
         case exponentCorrupted
         case baseCorrupted
-        
+
         public var description: String {
             switch self {
             case .nonASCIIString:
@@ -161,7 +160,7 @@ extension BigDecimal {
     /// - Parameter string: The string to parse the value from.
     /// - Throws: A ``ParsingError`` if parsing failed.
     @inlinable
-    public init<S>(fromString string: S) throws where S: StringProtocol {
+    init<S>(fromString string: S) throws where S: StringProtocol {
         guard string.allSatisfy(\.isASCII) else {
             throw ParsingError.nonASCIIString
         }
@@ -209,10 +208,9 @@ extension BigDecimal {
     }
 }
 
-
 extension BigDecimal: Equatable {
     @inlinable
-    public static func ==(lhs: BigDecimal, rhs: BigDecimal) -> Bool {
+    public static func == (lhs: BigDecimal, rhs: BigDecimal) -> Bool {
         if lhs.isZero && rhs.isZero {
             return true
         }
@@ -231,7 +229,7 @@ extension BigDecimal: Equatable {
 
 extension BigDecimal: Comparable {
     @inlinable
-    public static func <(lhs: BigDecimal, rhs: BigDecimal) -> Bool {
+    public static func < (lhs: BigDecimal, rhs: BigDecimal) -> Bool {
         if lhs.sign != rhs.sign {
             return lhs.sign == .minus
         }
@@ -240,20 +238,19 @@ extension BigDecimal: Comparable {
     }
 }
 
-
 extension BigDecimal: SignedNumeric {
     @inlinable
-    public init<T>(exactly source: T) where T : BinaryInteger {
+    public init<T>(exactly source: T) where T: BinaryInteger {
         self.init(source)
     }
 
     @inlinable
     public var magnitude: BigDecimal {
-        .init(integerValue: BigInt(self.integerValue.magnitude), scale: self.scale)
+        .init(integerValue: BigInt(integerValue.magnitude), scale: scale)
     }
 
     @inlinable
-    public static func +=(lhs: inout BigDecimal, rhs: BigDecimal) {
+    public static func += (lhs: inout BigDecimal, rhs: BigDecimal) {
         let newIntegerValue: BigInt
         var newScale = lhs.scale
         if lhs.scale < rhs.scale {
@@ -271,7 +268,7 @@ extension BigDecimal: SignedNumeric {
     }
 
     @inlinable
-    public static func -=(lhs: inout BigDecimal, rhs: BigDecimal) {
+    public static func -= (lhs: inout BigDecimal, rhs: BigDecimal) {
         let newIntegerValue: BigInt
         var newScale = lhs.scale
         if lhs.scale < rhs.scale {
@@ -289,12 +286,12 @@ extension BigDecimal: SignedNumeric {
     }
 
     @inlinable
-    public static func *=(lhs: inout BigDecimal, rhs: BigDecimal) {
+    public static func *= (lhs: inout BigDecimal, rhs: BigDecimal) {
         lhs = .init(integerValue: lhs.integerValue * rhs.integerValue, scale: lhs.scale + rhs.scale)
     }
 
     @inlinable
-    public static func /=(lhs: inout BigDecimal, rhs: BigDecimal) {
+    public static func /= (lhs: inout BigDecimal, rhs: BigDecimal) {
         precondition(!rhs.isZero, "Division by zero")
 
         if lhs.isZero || rhs == .one {
@@ -306,39 +303,42 @@ extension BigDecimal: SignedNumeric {
         if lhs.integerValue == rhs.integerValue {
             lhs = .init(integerValue: 1, scale: scale)
         } else {
-            lhs = Self._division(numerator: lhs.integerValue, denominator: rhs.integerValue, scale: scale, maxPrecision: 100)
+            lhs = Self._division(
+                numerator: lhs.integerValue,
+                denominator: rhs.integerValue,
+                scale: scale,
+                maxPrecision: 100
+            )
         }
     }
 
-
     @inlinable
-    public static func +(lhs: BigDecimal, rhs: BigDecimal) -> BigDecimal {
+    public static func + (lhs: BigDecimal, rhs: BigDecimal) -> BigDecimal {
         var result = lhs
         result += rhs
         return result
     }
 
     @inlinable
-    public static func -(lhs: BigDecimal, rhs: BigDecimal) -> BigDecimal {
+    public static func - (lhs: BigDecimal, rhs: BigDecimal) -> BigDecimal {
         var result = lhs
         result -= rhs
         return result
     }
 
     @inlinable
-    public static func *(lhs: BigDecimal, rhs: BigDecimal) -> BigDecimal {
+    public static func * (lhs: BigDecimal, rhs: BigDecimal) -> BigDecimal {
         var result = lhs
         result *= rhs
         return result
     }
 
     @inlinable
-    public static func /(lhs: BigDecimal, rhs: BigDecimal) -> BigDecimal {
+    public static func / (lhs: BigDecimal, rhs: BigDecimal) -> BigDecimal {
         var result = lhs
         result /= rhs
         return result
     }
-
 
     /// Returns the remainder of this value divided by the given value.
     ///
@@ -347,7 +347,7 @@ extension BigDecimal: SignedNumeric {
     @inlinable
     public func remainder(dividingBy other: BigDecimal) -> BigDecimal {
         let scale = max(self.scale, other.scale)
-        let numerator = self.integerValue
+        let numerator = integerValue
         let denominator = other.integerValue
 
         let result: BigInt
@@ -364,18 +364,32 @@ extension BigDecimal: SignedNumeric {
         return .init(integerValue: result, scale: scale)
     }
 
-
     @inline(__always) @usableFromInline
-    internal static func _division(numerator: BigInt, denominator: BigInt, scale: Int, maxPrecision: Int) -> BigDecimal {
+    static func _division(numerator: BigInt, denominator: BigInt, scale: Int, maxPrecision: Int) -> BigDecimal {
         if numerator.isZero {
             return .init(integerValue: numerator, scale: 0)
         }
 
         switch (numerator.sign, denominator.sign) {
-            case (.minus, .minus): return Self._division(numerator: -numerator, denominator: -denominator, scale: scale, maxPrecision: maxPrecision)
-            case (.minus, .plus): return -Self._division(numerator: -numerator, denominator: denominator, scale: scale, maxPrecision: maxPrecision)
-            case (.plus, .minus): return -Self._division(numerator: numerator, denominator: -denominator, scale: scale, maxPrecision: maxPrecision)
-            case (.plus, .plus): break
+        case (.minus, .minus): return _division(
+                numerator: -numerator,
+                denominator: -denominator,
+                scale: scale,
+                maxPrecision: maxPrecision
+            )
+        case (.minus, .plus): return -_division(
+                numerator: -numerator,
+                denominator: denominator,
+                scale: scale,
+                maxPrecision: maxPrecision
+            )
+        case (.plus, .minus): return -_division(
+                numerator: numerator,
+                denominator: -denominator,
+                scale: scale,
+                maxPrecision: maxPrecision
+            )
+        case (.plus, .plus): break
         }
 
         var numerator = numerator
@@ -419,7 +433,6 @@ extension BigDecimal: SignedNumeric {
     }
 }
 
-
 extension BigDecimal: ExpressibleByIntegerLiteral {
     @inlinable
     public init(integerLiteral value: Int64) {
@@ -427,14 +440,12 @@ extension BigDecimal: ExpressibleByIntegerLiteral {
     }
 }
 
-
 extension BigDecimal: ExpressibleByFloatLiteral {
     @inlinable
     public init(floatLiteral value: Double) {
         self.init(value)!
     }
 }
-
 
 extension BigDecimal: LosslessStringConvertible {
     @inlinable
@@ -444,11 +455,12 @@ extension BigDecimal: LosslessStringConvertible {
 
     @inlinable
     public var description: String {
-        var absoluteIntegerValue = self.integerValue.magnitude.description
+        var absoluteIntegerValue = integerValue.magnitude.description
 
         let (before, after): (String, String) = {
             if self.scale >= absoluteIntegerValue.count {
-                let after = String(repeating: "0", count: self.scale - absoluteIntegerValue.count) + absoluteIntegerValue
+                let after = String(repeating: "0", count: self.scale - absoluteIntegerValue.count) +
+                    absoluteIntegerValue
                 return ("0", after)
             } else {
                 let location = absoluteIntegerValue.count - self.scale
@@ -473,13 +485,13 @@ extension BigDecimal: LosslessStringConvertible {
 extension BigDecimal: Hashable {
     @inlinable
     public func hash(into hasher: inout Hasher) {
-        guard !self.integerValue.isZero else {
+        guard !integerValue.isZero else {
             "0".hash(into: &hasher)
             0.hash(into: &hasher)
             return
         }
 
-        var decimalString = self.integerValue.description
+        var decimalString = integerValue.description
         var scale = self.scale
         if scale > 0 {
             var count = -1
@@ -513,11 +525,10 @@ extension BigDecimal: Codable {
     public func encode(to encoder: Encoder) throws {
         var container = encoder.singleValueContainer()
 
-        try container.encode(self.description)
+        try container.encode(description)
     }
 }
 
-
 #if swift(>=5.5)
-extension BigDecimal: Sendable {}
+    extension BigDecimal: Sendable {}
 #endif

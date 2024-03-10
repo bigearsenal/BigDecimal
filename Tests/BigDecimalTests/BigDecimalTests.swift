@@ -1,5 +1,5 @@
-import XCTest
 @testable import BigDecimal
+import XCTest
 
 import BigInt
 
@@ -20,7 +20,7 @@ final class BigDecimalTests: XCTestCase {
     func testSum1() {
         let values: [BigDecimal] = [
             0.1,
-            0.2
+            0.2,
         ]
 
         let expectedSum = BigDecimal(0.3)
@@ -35,7 +35,7 @@ final class BigDecimalTests: XCTestCase {
             ("3.14", 3),
             ("50", 50),
             ("50000", 50000),
-            ("0.001", 0)
+            ("0.001", 0),
         ]
 
         for (s, ans) in values {
@@ -92,7 +92,7 @@ final class BigDecimalTests: XCTestCase {
             ("0.15625", 5.0 * 0.03125),
             ("3.1415925", Float.pi),
             ("31415.926", Float.pi * 10000.0),
-            ("94247.77", Float.pi * 30000.0)
+            ("94247.77", Float.pi * 30000.0),
         ]
 
         for (s, n) in values {
@@ -116,7 +116,7 @@ final class BigDecimalTests: XCTestCase {
             ("0.3333333333333333", 1.0 / 3.0),
             ("3.141592653589793", Double.pi),
             ("31415.926535897932", Double.pi * 10000.0),
-            ("94247.7796076938", Double.pi * 30000.0)
+            ("94247.7796076938", Double.pi * 30000.0),
         ]
 
         for (s, n) in values {
@@ -392,7 +392,6 @@ final class BigDecimalTests: XCTestCase {
         }
     }
 
-
     func testDigitCount() {
         let values = [
             ("0", 1),
@@ -480,7 +479,6 @@ final class BigDecimalTests: XCTestCase {
             XCTAssertEqual(b, y)
         }
     }
-
 
     private static func hash<T: Hashable>(_ value: T) -> Int {
         var hasher = Hasher()

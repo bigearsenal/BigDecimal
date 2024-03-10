@@ -1,7 +1,8 @@
 import BigInt
+import Numerics
 
 @inline(__always) @usableFromInline
-internal func tenToThe(power: Int) -> BigInt {
+func tenToThe(power: Int) -> BigInt {
     if power < 20 {
         return .init(10).power(power)
     } else {
@@ -9,7 +10,7 @@ internal func tenToThe(power: Int) -> BigInt {
 
         var x = tenToThe(power: half)
 
-        for _ in 0..<4 {
+        for _ in 0 ..< 4 {
             x = x * x
         }
 
@@ -22,7 +23,7 @@ internal func tenToThe(power: Int) -> BigInt {
 }
 
 @inline(__always) @usableFromInline
-internal func getRoundingTerm(of number: BigInt) -> BigInt {
+func getRoundingTerm(of number: BigInt) -> BigInt {
     if number.isZero {
         return 0
     }
